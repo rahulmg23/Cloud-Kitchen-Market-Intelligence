@@ -729,7 +729,7 @@ ORDER BY price DESC;
 | **Geospatial** | Map restaurant density vs. population heatmaps |
 | **ML** | Predict bestseller items using price-elasticity modeling |
 | **Visualization** | Tableau/PowerBI dashboard for stakeholder reporting |
-```
+
 ## Data Visualizations
 
 ### Chart 1: Cuisine Saturation Analysis
@@ -750,7 +750,4 @@ ORDER BY price DESC;
 &lt;img width="596" height="353" alt="Operational Efficiency" src="https://github.com/user-attachments/assets/4ce4ea64-7b42-46e9-a9eb-c96780e5e174" /&gt;
 
 **Insight:** Vintage Asia sits alone in the efficiency zone (low SKU count + low price CV). Tamara and Tomato's sit in the danger zone (high SKU + high complexity). Bubble size shows menu category fragmentation — larger bubbles mean more operational overhead.
-
-
----
 
