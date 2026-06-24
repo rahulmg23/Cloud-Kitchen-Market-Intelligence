@@ -733,8 +733,8 @@ ORDER BY price DESC;
 ## Data Visualizations
 
 ### Chart 1: Cuisine Saturation Analysis
-![Cuisine Saturation](<img width="583" height="301" alt="Screenshot 2026-06-24 115615" src="https://github.com/user-attachments/assets/a94efa44-6f0e-422a-af2d-861b459cf728" />
-)
+![Cuisine Saturation]<img width="583" height="301" alt="Screenshot 2026-06-24 115615" src="https://github.com/user-attachments/assets/a94efa44-6f0e-422a-af2d-861b459cf728" />
+
 
 **Insight:** Indian Main Course dominates with 248 items (21.9% of all menu items), confirming extreme saturation. The green zone (Chaat/Street Food at 53 items) represents the underrepresented opportunity identified in Q2.
 
