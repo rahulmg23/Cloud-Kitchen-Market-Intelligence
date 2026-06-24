@@ -733,21 +733,21 @@ ORDER BY price DESC;
 ## Data Visualizations
 
 ### Chart 1: Cuisine Saturation Analysis
-&lt;img width="583" height="301" alt="Cuisine Saturation" src="https://github.com/user-attachments/assets/a94efa44-6f0e-422a-af2d-861b459cf728" /&gt;
+<img width="583" height="301" alt="Screenshot 2026-06-24 115615" src="https://github.com/user-attachments/assets/fa5196a0-0b4c-4273-b02e-5fd7b2743431" />
 
 **Insight:** Indian Main Course dominates with 248 items (21.9% of all menu items), confirming extreme saturation. The green zone (Chaat/Street Food at 53 items) represents the underrepresented opportunity identified in Q2.
 
 ---
 
 ### Chart 2: Price Distribution — The Red Ocean
-&lt;img width="537" height="308" alt="Price Distribution" src="https://github.com/user-attachments/assets/b5f688cf-7ff1-4201-8d6c-0fd2247b4eb3" /&gt;
+<img width="537" height="308" alt="Screenshot 2026-06-24 115758" src="https://github.com/user-attachments/assets/e6200faa-433e-44b6-8aae-9451595d9fdc" />
 
 **Insight:** 515 items (45.5%) cluster in the ₹301–₹500 band — the "red ocean" where every restaurant competes for the same customer at the same price point. The green zone (₹0–₹150) at only 11.8% represents the budget-tier gap.
 
 ---
 
 ### Chart 3: Operational Efficiency Matrix
-&lt;img width="596" height="353" alt="Operational Efficiency" src="https://github.com/user-attachments/assets/4ce4ea64-7b42-46e9-a9eb-c96780e5e174" /&gt;
+<img width="596" height="353" alt="Screenshot 2026-06-24 115820" src="https://github.com/user-attachments/assets/c7dd1481-854c-48e8-94f4-6c7b6604bb98" />
 
 **Insight:** Vintage Asia sits alone in the efficiency zone (low SKU count + low price CV). Tamara and Tomato's sit in the danger zone (high SKU + high complexity). Bubble size shows menu category fragmentation — larger bubbles mean more operational overhead.
 
