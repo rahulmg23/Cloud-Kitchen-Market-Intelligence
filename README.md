@@ -1,8 +1,6 @@
-
-```markdown
 # Cloud-Kitchen-Market-Intelligence
 
-## Zomato Scraping & Business Intelligence Pipeline for Nashik College Road
+> Zomato Scraping & Business Intelligence Pipeline for Nashik College Road
 
 ## Project Overview
 
@@ -14,8 +12,6 @@ This project delivers a comprehensive market intelligence study of food delivery
 - **Cleaned datasets** with documented transformation logic
 - **Business insights** on cuisine saturation, pricing strategy, and operational efficiency
 - **SQL schema & queries** for structured analytics
-
-
 
 ## Tech Stack
 
@@ -30,11 +26,14 @@ This project delivers a comprehensive market intelligence study of food delivery
 ## Part 1: Data Collection
 
 ### Objective
+
 Collect structured data for **30+ restaurants** from Zomato's College Road listings across three sections: **Dining Out**, **Delivery**, and **Nightlife**.
 
 ### Scraping Strategy
+
 The scraper uses **Selenium** for JavaScript-rendered content and **BeautifulSoup** for HTML parsing. Key design decisions:
 
+```python
 # Dynamic section navigation via XPath
 sections = ["Dining Out", "Delivery", "Nightlife"]
 for section in sections:
@@ -83,6 +82,7 @@ def detect_type(name, cuisines):
 | 3 | `https://www.zomato.com/webroutes/getMenu/` | GET | JSON | Menu categories, item names, prices, veg/non-veg flags |
 
 ### Investigation Methodology
+
 1. **Open Chrome DevTools** → Network Tab → Filter: `XHR/Fetch`
 2. **Navigate** through restaurant listings and menu pages
 3. **Capture** request URLs, payloads, and response structures
@@ -181,40 +181,12 @@ def get_price(item_section):
 
 ## Part 6: SQL Schema
 
-### Entity Relationship Diagram
+### Database Schema
 
 ```sql
--- Restaurants Table
-CREATE TABLE restaurants (
-    restaurant_id   INT PRIMARY KEY AUTO_INCREMENT,
-    name            VARCHAR(255) NOT NULL,
-    cuisine         VARCHAR(255),
-    rating          DECIMAL(2,1),
-    num_reviews     INT,
-    cost_for_two    INT,
-    locality        VARCHAR(100),
-    delivery_time   INT,
-    restaurant_type ENUM('Cloud Kitchen', 'Dine-In', 'Takeaway/QSR'),
-    platform        VARCHAR(50)
-);
+CREATE DATABASE zom;
 
--- Menu Items Table
-CREATE TABLE menu_items (
-    item_id         INT PRIMARY KEY AUTO_INCREMENT,
-    restaurant_id   INT,
-    category        VARCHAR(100),
-    item_name       VARCHAR(255),
-    price           INT,
-    FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id)
-);
-```
-
-### Key Queries
-
-```sql
-create database zom
-
-use zom
+USE zom;
 
 CREATE TABLE restaurants (
     restaurant_id INT PRIMARY KEY,
@@ -241,7 +213,6 @@ CREATE TABLE menu_items (
     is_veg BOOLEAN,
     FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id)
 );
-
 
 INSERT INTO restaurants VALUES
 (1, 'Grill Craft Co.', 4.2, 800, 'Indiranagar, Bangalore', 320),
@@ -285,9 +256,11 @@ INSERT INTO menu_items VALUES
 (16, 6, 'Thai Red Chicken Curry', 'Main Course', 580.00, false),
 (17, 6, 'Dim Sum Basket', 'Starters', 420.00, false),
 (18, 6, 'Wonton Soup', 'Soups and Salads', 280.00, false);
+```
 
+### Key Queries
 
-
+```sql
 -- QUERY 1: Top 5 highest rated restaurants 
 
 WITH ranked_restaurants AS (
@@ -324,6 +297,7 @@ ORDER BY avg_cost_for_two DESC;
 
 
 -- QUERY 3: Restaurants with more than one cuisine (with cuisine list concatenated)
+
 WITH cuisine_counts AS (
     SELECT
         restaurant_id,
@@ -362,7 +336,6 @@ WHERE price_rank = 1
 ORDER BY price DESC;
 ```
 
-
 ## Future Improvements
 
 | Area | Enhancement |
@@ -373,6 +346,6 @@ ORDER BY price DESC;
 | **Geospatial** | Map restaurant density vs. population heatmaps |
 | **ML** | Predict bestseller items using price-elasticity modeling |
 | **Visualization** | Tableau/PowerBI dashboard for stakeholder reporting |
+```
 
-
-
+---
