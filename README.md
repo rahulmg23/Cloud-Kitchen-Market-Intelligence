@@ -242,12 +242,9 @@ Restaurant IDs (e.g. `res_id=21802549`) are sequential integers visible across `
 
 | Screenshot | Description |
 |------------|-------------|
-| **<img width="975" height="486" alt="image" src="https://github.com/user-attachments/assets/89e5aebd-bfdd-4e7c-b4ed-e26a4398bcb1" />
-** | JSON Response for `get?res_id=21802549` — Shows the Response tab open with actual JSON body: `{"request_id":"4dd56268-1f15-4391-9107-ed4b8bac15f2"}`. Confirms the restaurant ID lookup endpoint returns a structured JSON object with a unique request identifier. |
-| **<img width="975" height="483" alt="image" src="https://github.com/user-attachments/assets/251ca2c6-126e-4956-97dd-fa63c8629075" />
-** | JSON Response for `getPage?page_url=.../grill-craft-co-college-road/order` — Full hydration payload including: `page_info` with `resId: 21802549`, `name`, `pageTitle`, `isMobile: 0`, `isD2Enabled: false`; `page_data` with `SECTION_IMAGE_CAROUSEL`, `SECTION_BASIC_INFO`, `cuisine_string`, `aggregate_rating: "4.2"`. The `isD2Enabled: false` field directly explains the "ordering only on mobile app" message. |
-| **<img width="975" height="480" alt="image" src="https://github.com/user-attachments/assets/f1cd130a-0a33-4d23-9bb9-bfb6bd9a3956" />
-** | `SECTION_MAGIC_LINKS` — Deeper scroll into the `getPage` response, exposing Zomato's internal SEO/navigation link graph. The JSON contains an array of contextual deep-links auto-generated for every restaurant page: `zomato.com/nashik` → "Nashik Restaurants", `zomato.com/nashik/college-road-restaurants` → "College Road restaurants", `zomato.com/nashik/best-college-road-restaurants`, `zomato.com/nashik/casual-dining` → "Casual Dining in Nashik", `zomato.com/nashik/college-road-order-online` → "Order food online in College Road". |
+| <img width="975" height="486" alt="image" src="https://github.com/user-attachments/assets/89e5aebd-bfdd-4e7c-b4ed-e26a4398bcb1" /> | JSON Response for `get?res_id=21802549` — Shows the Response tab open with actual JSON body: `{"request_id":"4dd56268-1f15-4391-9107-ed4b8bac15f2"}`. Confirms the restaurant ID lookup endpoint returns a structured JSON object with a unique request identifier. |
+| <img width="975" height="483" alt="image" src="https://github.com/user-attachments/assets/251ca2c6-126e-4956-97dd-fa63c8629075" /> | JSON Response for `getPage?page_url=.../grill-craft-co-college-road/order` — Full hydration payload including: `page_info` with `resId: 21802549`, `name`, `pageTitle`, `isMobile: 0`, `isD2Enabled: false`; `page_data` with `SECTION_IMAGE_CAROUSEL`, `SECTION_BASIC_INFO`, `cuisine_string`, `aggregate_rating: "4.2"`. The `isD2Enabled: false` field directly explains the "ordering only on mobile app" message. |
+| <img width="975" height="480" alt="image" src="https://github.com/user-attachments/assets/f1cd130a-0a33-4d23-9bb9-bfb6bd9a3956" /> | `SECTION_MAGIC_LINKS` — Deeper scroll into the `getPage` response, exposing Zomato's internal SEO/navigation link graph. The JSON contains an array of contextual deep-links auto-generated for every restaurant page: `zomato.com/nashik` → "Nashik Restaurants", `zomato.com/nashik/college-road-restaurants` → "College Road restaurants", `zomato.com/nashik/best-college-road-restaurants`, `zomato.com/nashik/casual-dining` → "Casual Dining in Nashik", `zomato.com/nashik/college-road-order-online` → "Order food online in College Road". |
 ```
 
 
@@ -292,17 +289,115 @@ def get_price(item_section):
 
 ## Part 4: Data Cleaning
 
-### Transformation Log
+**Before Cleaning:** 1,134 records  
+**After Cleaning:** 1,134 records (no rows were deleted — all issues found were category name inconsistencies, not corrupt or duplicate data)
 
-| Step | Issue | Action | Records Before → After |
-|------|-------|--------|------------------------|
-| 1 | Duplicate entries across sections | `drop_duplicates(subset=["restaurant_name", "section"])` | 42 → 38 |
-| 2 | Missing ratings (0.0 default) | Flag as `NaN`, impute section median | 38 → 38 |
-| 3 | Cuisine normalization | Lowercase, strip whitespace, map aliases ("Chinese" = "Chinese, Asian") | 38 → 38 |
-| 4 | Outlier review counts | Cap at 99th percentile, log-transform | 38 → 38 |
-| 5 | Cost standardization | Remove commas, cast to int, validate ₹100–₹5000 range | 38 → 36 |
+### Step 1 — Duplicate Detection
 
-**Final Clean Dataset:** 36 validated restaurant records
+My strategy was to check for two types of duplicates:
+
+**First, exact duplicates** — rows where all four columns (Restaurant Name, Menu Category, Item Name, Item Price) are identical. Result: zero exact duplicates found. Every row in the dataset is unique.
+
+**Second, logical duplicates** — same item name appearing twice under the same restaurant but in different categories or at different prices. I checked this by grouping on Restaurant Name + Item Name. Result: zero logical duplicates found either.
+
+**Conclusion:** the dataset had no duplicate problem.
+
+### Step 2 — Missing Value Check
+
+I checked every column for blank or null values.
+
+| Column | Missing Values |
+|--------|---------------|
+| Restaurant Name | 0 |
+| Menu Category | 0 |
+| Item Name | 0 |
+| Item Price (₹) | 0 |
+
+No missing values anywhere. The dataset was complete.
+
+I also checked for zero or negative prices, since a ₹0 price could mean a data entry error rather than a null. Result: no items were priced at zero or below. The lowest price in the dataset is ₹20 (Green Salad, The Mykonos), which is a real menu item.
+
+One item — Assorted Sushi Boat at ₹1,650 (The Mykonos) — stands out as unusually high. I flagged it but did not remove it because it is a legitimate high-end sushi platter, not a data error.
+
+### Step 3 — Whitespace Check
+
+I checked whether any item names or category names had extra spaces at the beginning or end (for example " Breads" instead of "Breads"). This matters because "Breads" and " Breads" would be treated as two different categories by any analysis tool even though they look the same to the eye.
+
+Result: zero whitespace issues found in either column. The data was already clean on this front.
+
+### Step 4 — Cuisine/Category Normalization (the main cleaning work)
+
+This is where the real issues were. The dataset had 47 unique category names across 6 restaurants. Many of these were the same category written differently by different restaurants. I identified and standardized the following:
+
+**Issue 1 — "Main course" vs "Main Course" (capital C)**
+
+Grill Craft Co. used "Main course" (lowercase c). All other restaurants used "Main Course" (uppercase C). These are the same thing — 61 items affected.
+
+Fix: Changed all instances of "Main course" to "Main Course".
+
+**Issue 2 — "Dessert", "Desserts", and "Dessert's"**
+
+Three restaurants used three different spellings for the same category. Grill Craft Co. used "Dessert", Larive Kitchen and Tamara used "Desserts", and The Mykonos used "Dessert's" (with an apostrophe — a clear typo). Total 13 items affected.
+
+Fix: Standardized all to "Desserts". Removed the apostrophe from "Dessert's".
+
+**Issue 3 — "Platter" vs "Platters"**
+
+Larive Kitchen used "Platter" (singular) and Tamara used "Platters" (plural) for the same type of category. 2 items affected.
+
+Fix: Standardized both to "Platters".
+
+**Issue 4 — "Bread" vs "Breads"**
+
+The Mykonos used "Bread" (singular) while all other restaurants used "Breads" (plural). 11 items affected.
+
+Fix: Changed "Bread" to "Breads".
+
+**Issue 5 — "Dimsums" vs "Dim Sum"**
+
+Larive Kitchen used "Dimsums" (one word, no space). Vintage Asia used "Dim Sum" (two words, correct). These are the same category. 5 items affected.
+
+Fix: Changed "Dimsums" to "Dim Sum".
+
+**Issue 6 — "Special dal" (lowercase d)**
+
+Grill Craft Co. used "Special dal" with a lowercase d. Standardized to "Special Dal" for consistency. 4 items affected.
+
+Fix: Changed to "Special Dal".
+
+### Summary Table
+
+| Issue Found | Original Value | Cleaned Value | Items Affected |
+|-------------|---------------|---------------|----------------|
+| Case inconsistency | Main course | Main Course | 61 |
+| Spelling variant | Dessert | Desserts | 5 |
+| Typo (apostrophe) | Dessert's | Desserts | 1 |
+| Singular vs plural | Platter | Platters | 1 |
+| Singular vs plural | Bread | Breads | 11 |
+| Formatting | Dimsums | Dim Sum | 5 |
+| Case inconsistency | Special dal | Special Dal | 4 |
+| **Total** | | | **88 cells updated** |
+
+**Before Cleaning:** 1,134 records, 47 unique category names  
+**After Cleaning:** 1,134 records, 41 unique category names
+
+No rows were added or removed. The record count stayed the same because all problems were naming inconsistencies, not bad data. The number of unique category names dropped from 47 to 41 because 6 duplicate category names were merged into their correct versions.
+
+### How I Collected and Cleaned the Data (During Extraction)
+
+When I was writing the code to scrape and extract the data from Zomato, I did not treat cleaning as a separate step that comes later. I built the fixes directly into the extraction code itself. Here is what I handled at the code level:
+
+**Whitespace stripping** — every time I extracted a restaurant name, category name, or item name, I applied a `.strip()` function immediately. This removes any accidental spaces before or after the text before it even enters the dataset. So " Breads " would become "Breads" at the moment of collection, not after.
+
+**Consistent price extraction** — I wrote the price extraction to always read the value as a number, not as text. This prevented issues like "₹380" being stored as a string instead of the number 380, which would break any calculation later.
+
+**Handling missing prices** — in the extraction code, if a price field came back empty or unreadable, I set it to 0 rather than leaving it blank. This way the dataset never had null values in the price column. I could then detect and review any zeros rather than having invisible gaps.
+
+**Restaurant name consistency** — since I was scraping multiple pages, I hardcoded the restaurant name for each session rather than trying to scrape it dynamically every time. This made sure "Grill Craft Co." was always written exactly the same way across all 191 of its rows, with no risk of it appearing as "Grill craft co." or "GrillCraft Co." depending on how the page rendered it.
+
+**Category name extraction** — I pulled the category headers exactly as Zomato displayed them, which is why some inconsistencies like "Main course" vs "Main Course" still made it through. Those were genuine differences in how each restaurant's page was structured on Zomato — my code captured them faithfully, and I resolved them in the cleaning step described above.
+
+The goal was: whatever enters the Excel file is already as clean as I can make it at the point of collection. The remaining issues that needed fixing were things only visible once all six restaurants' data was sitting together in one sheet.
 
 ## Part 5: Business Analysis
 
