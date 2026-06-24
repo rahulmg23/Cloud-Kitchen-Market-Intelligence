@@ -73,20 +73,183 @@ def detect_type(name, cuisines):
 
 ## Part 2: Network Investigation
 
-### API Endpoints Identified
+Here's the converted Part 2 content in proper GitHub markdown format, ready to copy-paste into your README:
 
-| # | Endpoint Pattern | Method | Response Type | Data Returned |
-|---|----------------|--------|---------------|---------------|
-| 1 | `https://www.zomato.com/webroutes/getPage/` | GET | JSON | Restaurant listing cards, pagination metadata |
-| 2 | `https://www.zomato.com/webroutes/search/` | GET | JSON | Search results with entity IDs, ratings, photos |
-| 3 | `https://www.zomato.com/webroutes/getMenu/` | GET | JSON | Menu categories, item names, prices, veg/non-veg flags |
+```markdown
+## Part 2: Network Investigation
 
-### Investigation Methodology
+### Endpoint 01 — Restaurant Data Loader
 
-1. **Open Chrome DevTools** → Network Tab → Filter: `XHR/Fetch`
-2. **Navigate** through restaurant listings and menu pages
-3. **Capture** request URLs, payloads, and response structures
-4. **Document** headers, query parameters, and rate-limiting behavior
+| Attribute | Value |
+|-----------|-------|
+| **URL** | `getPage?page_url=.../nashik/grill-craft-co-college-road/order&location=&isMobile=0` |
+| **Method** | GET |
+| **Response** | fetch 200 OK |
+| **Payload** | 22.8 kB — largest payload |
+
+### Endpoint 02 — Restaurant Slot / Availability
+
+| Attribute | Value |
+|-----------|-------|
+| **URL** | `slots?res_id=21802549` |
+| **Method** | GET |
+| **Response** | fetch 200 OK |
+| **Payload** | 0.6 kB — first call, 396 ms |
+| **Pattern** | `/api/v1/slots?res_id={restaurant_id}` |
+| **Called At** | ~0 ms — very first XHR after page load |
+| **Purpose** | Table booking time-slot availability |
+
+```json
+{
+  "availability": {
+    "status": "available",
+    "slots": [
+      { "time": "11:00", "seats_left": 4 },
+      { "time": "12:30", "seats_left": 8 }
+    ],
+    "opens_at": "11:00 AM",
+    "booking_enabled": true
+  }
+}
+```
+
+**Key Insight:** Fired immediately on page load (first request, 396 ms) before user interacts — Zomato pre-fetches slot data eagerly to reduce latency when "Book a table" is clicked. The response drives the "Closed · Opens at 11am" badge visible in the UI.
+
+### Endpoint 03 — Address Autocomplete
+
+| Attribute | Value |
+|-----------|-------|
+| **URL** | `autoSuggest?addressId=866418&entityType=...&entityId=...&entityType=restaurantsUrl&q=&cont...` |
+| **Method** | GET |
+| **Response** | fetch 200 OK |
+| **Payload** | 0.1 kB · 294 ms |
+| **Pattern** | `/api/v2/autoSuggest?addressId={id}&entityType={type}&q={query}` |
+| **Purpose** | Delivery address location autocomplete |
+| **Trigger** | On-type / focus in delivery address input |
+
+```json
+{
+  "suggestions": [
+    {
+      "entity_id": 866418,
+      "entity_type": "restaurantsUrl",
+      "display_text": "College Road, Nashik",
+      "coordinates": { "lat": 20.0112, "lng": 73.7900 }
+    }
+  ],
+  "status": "success"
+}
+```
+
+**Key Insight:** The `q=` param is empty — this was the initial empty-query pre-fetch to warm the autocomplete dropdown. Entity type `restaurantsUrl` scopes the search to restaurant locations rather than generic addresses, providing context-aware suggestions.
+
+### Endpoint 04 — Analytics / RUM Telemetry
+
+| Attribute | Value |
+|-----------|-------|
+| **URL** | `rum?ddsource=browser&ddtags=sdk_version%3A5.28.0...&f-{uuid}...` |
+| **Method** | POST |
+| **Response** | fetch 202 Accepted |
+| **Payload** | ~0.5 kB × 20+ calls |
+| **Pattern** | `/api/v2/rum?ddsource=browser&ddtags=sdk_version:{ver}&...event_uuid={id}` |
+| **Volume** | Most frequent call type — 20+ instances in the waterfall |
+| **Provider** | Datadog Browser RUM SDK v5.28.0 |
+| **Purpose** | Real User Monitoring — performance + error tracking |
+
+```json
+{
+  "evt": { "category": "resource" },
+  "session": { "id": "f-45b6-a4a8-74ce3967..." },
+  "view": { "url": "/nashik/grill-craft-co/order", "load_time": 861 },
+  "performance": { "lcp": 1240, "cls": 0.02, "fid": 14 },
+  "user_action": "scroll",
+  "sdk_version": "5.28.0"
+}
+```
+
+**Key Insight:** These are fire-and-forget telemetry pings to Datadog's ingestion endpoint. The 202 (Accepted, not 200 OK) response is intentional — Datadog returns immediately without processing. The high volume (20+ calls) is because RUM batches events per user interaction, not per page load. Each unique UUID in the URL is a distinct event batch.
+
+### Endpoint 05 — Google Analytics / GTM Beacons
+
+| Attribute | Value |
+|-----------|-------|
+| **URL** | `collect?v=2&tid=G-XB66E85ZJ>m=45je6611v91643898...&tu=wAQ&en=page_view` |
+| **Method** | POST |
+| **Response** | fetch 204 No Content |
+| **Type** | GTM measurement |
+| **Pattern** | `https://www.google-analytics.com/g/collect?v=2&tid=G-{trackingId}&en={eventName}` |
+| **Tracking ID** | G-XB66E85ZJ (GA4 measurement ID) |
+| **GTM Container** | 45je6611 (Google Tag Manager) |
+| **Purpose** | GA4 page_view + event tracking via GTM |
+
+```
+// URL-encoded POST body (GA4 Measurement Protocol)
+v=2
+&tid=G-XB66E85ZJ
+>m=45je6611v91643898
+&_p=1780455671463        // page load timestamp
+&en=page_view            // event name
+&_et=100                 // engagement time ms
+&ep.page_location=https://www.zomato.com/nashik/grill-craft-co.../order
+&ep.restaurant_id=21802549
+&seg=1                   // session engaged flag
+
+// Response: 204 No Content (intentional — beacon pattern)
+```
+
+**Key Insight:** This is GA4's Measurement Protocol v2 via GTM. The 204 No Content response is the standard beacon response — data received, nothing returned. The `_p` timestamp fingerprints the session. Multiple collect calls visible in the waterfall correspond to different GA4 events (page_view, scroll, click) all routed through the same GTM container.
+
+### Endpoint 06 — Events / Product Interaction
+
+| Attribute | Value |
+|-----------|-------|
+| **URL** | `events?cee=no` |
+| **Method** | GET |
+| **Response** | fetch 200 OK |
+| **Payload** | 0.0 kB — empty body, 256 ms |
+| **Pattern** | `/api/v1/events?cee={flag}` |
+| **Query Param** | `cee=no` — likely "client-side events enabled = no" |
+| **Purpose** | Internal event pipeline toggle / consent check |
+
+```
+// 0-byte response — server acknowledges, no payload
+// Likely used as a feature flag / experiment config check:
+{ "events_enabled": false, "cee": "no", "batch_interval_ms": 0 }
+// OR used as a lightweight ping for session keep-alive
+```
+
+**Key Insight:** The 0-byte response body is deliberate — this is a control-plane call, not a data call. The `cee=no` parameter suggests Zomato's internal event collector is being toggled off (possibly respecting user consent or regional regulation), while Datadog RUM and Google Analytics run on separate pipelines regardless.
+
+## Summary Findings
+
+### Architecture Pattern: SPA with Eager Pre-fetch
+
+Zomato loads restaurant data via a single `getPage` hydration call (22.8 kB), then fires slot availability, autocomplete, and analytics calls in parallel before any user interaction. This "pre-fetch on mount" pattern minimises perceived latency at the cost of unnecessary requests for users who don't interact.
+
+### Dual Analytics Stack: Datadog RUM + GA4 via GTM
+
+Zomato runs two parallel observability systems — Datadog SDK v5.28.0 for engineering (performance, errors, Core Web Vitals) and Google Analytics 4 via GTM container 45je6611 for product/marketing (page views, funnel events). Both use fire-and-forget patterns (202 / 204 responses), generating ~30 of the 91 XHR requests.
+
+### Mobile-Gated Ordering via Client-Side Flag
+
+The "Online ordering is only supported on the mobile app" overlay is not a server-side redirect — it is triggered by `isMobile=0` in the `getPage` request. The desktop browser receives the full menu data (confirmed by visible category counts), but the UI conditionally blocks ordering. This is bypassable by spoofing the `isMobile` parameter or a mobile User-Agent string.
+
+### Resource IDs are Predictable Integers
+
+Restaurant IDs (e.g. `res_id=21802549`) are sequential integers visible across `slots`, `get?res_id`, and GTM events. Combined with the `getPage?page_url=` slug pattern, this makes it possible to enumerate restaurant records — a common IDOR surface worth noting from a security research perspective.
+
+## Screenshots
+
+| Screenshot | Description |
+|------------|-------------|
+| **<img width="975" height="486" alt="image" src="https://github.com/user-attachments/assets/89e5aebd-bfdd-4e7c-b4ed-e26a4398bcb1" />
+** | JSON Response for `get?res_id=21802549` — Shows the Response tab open with actual JSON body: `{"request_id":"4dd56268-1f15-4391-9107-ed4b8bac15f2"}`. Confirms the restaurant ID lookup endpoint returns a structured JSON object with a unique request identifier. |
+| **<img width="975" height="483" alt="image" src="https://github.com/user-attachments/assets/251ca2c6-126e-4956-97dd-fa63c8629075" />
+** | JSON Response for `getPage?page_url=.../grill-craft-co-college-road/order` — Full hydration payload including: `page_info` with `resId: 21802549`, `name`, `pageTitle`, `isMobile: 0`, `isD2Enabled: false`; `page_data` with `SECTION_IMAGE_CAROUSEL`, `SECTION_BASIC_INFO`, `cuisine_string`, `aggregate_rating: "4.2"`. The `isD2Enabled: false` field directly explains the "ordering only on mobile app" message. |
+| **<img width="975" height="480" alt="image" src="https://github.com/user-attachments/assets/f1cd130a-0a33-4d23-9bb9-bfb6bd9a3956" />
+** | `SECTION_MAGIC_LINKS` — Deeper scroll into the `getPage` response, exposing Zomato's internal SEO/navigation link graph. The JSON contains an array of contextual deep-links auto-generated for every restaurant page: `zomato.com/nashik` → "Nashik Restaurants", `zomato.com/nashik/college-road-restaurants` → "College Road restaurants", `zomato.com/nashik/best-college-road-restaurants`, `zomato.com/nashik/casual-dining` → "Casual Dining in Nashik", `zomato.com/nashik/college-road-order-online` → "Order food online in College Road". |
+```
+
 
 ## Part 3: Menu Intelligence
 
