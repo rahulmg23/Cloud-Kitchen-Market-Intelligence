@@ -730,6 +730,27 @@ ORDER BY price DESC;
 | **ML** | Predict bestseller items using price-elasticity modeling |
 | **Visualization** | Tableau/PowerBI dashboard for stakeholder reporting |
 ```
+## Data Visualizations
+
+### Chart 1: Cuisine Saturation Analysis
+![Cuisine Saturation](<img width="583" height="301" alt="Screenshot 2026-06-24 115615" src="https://github.com/user-attachments/assets/a94efa44-6f0e-422a-af2d-861b459cf728" />
+)
+
+**Insight:** Indian Main Course dominates with 248 items (21.9% of all menu items), confirming extreme saturation. The green zone (Chaat/Street Food at 53 items) represents the underrepresented opportunity identified in Q2.
+
+---
+
+### Chart 2: Price Distribution — The Red Ocean
+![Price Distribution](charts/chart2_price_distribution.png)
+
+**Insight:** 515 items (45.5%) cluster in the ₹301–₹500 band — the "red ocean" where every restaurant competes for the same customer at the same price point. The green zone (₹0–₹150) at only 11.8% represents the budget-tier gap.
+
+---
+
+### Chart 3: Operational Efficiency Matrix
+![Operational Efficiency](charts/chart3_operational_efficiency.png)
+
+**Insight:** Vintage Asia sits alone in the efficiency zone (low SKU count + low price CV). Tamara and Tomato's sit in the danger zone (high SKU + high complexity). Bubble size shows menu category fragmentation — larger bubbles mean more operational overhead.
 
 ---
 
