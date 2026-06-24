@@ -1,8 +1,3 @@
-I'll do a thorough review of your entire README file and fix all formatting issues. Let me go through it section by section.
-
-Here is the fully corrected README with all issues fixed:
-
-```markdown
 # Cloud-Kitchen-Market-Intelligence
 
 > Zomato Scraping & Business Intelligence Pipeline for Nashik College Road
