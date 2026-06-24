@@ -1,13 +1,12 @@
-I'll write the complete README in proper GitHub markdown with `##` headers throughout. Here's the full file ready to copy-paste:
 
 ```markdown
 # Cloud-Kitchen-Market-Intelligence
 
-> **Data Analytics Internship Assessment** | Zomato Scraping & Business Intelligence Pipeline for Nashik College Road
+## Zomato Scraping & Business Intelligence Pipeline for Nashik College Road
 
 ## Project Overview
 
-This project delivers a comprehensive market intelligence study of food delivery restaurants in **College Road, Nashik**, conducted as part of a Data Analytics Internship Assessment. The pipeline covers end-to-end data collection, network investigation, menu intelligence, data cleaning, business analysis, and SQL modeling — all grounded in real-world Zomato platform data.
+This project delivers a comprehensive market intelligence study of food delivery restaurants in **College Road, Nashik**. The pipeline covers end-to-end data collection, network investigation, menu intelligence, data cleaning, business analysis, and SQL modeling — all grounded in real-world Zomato platform data.
 
 **Key Deliverables:**
 - **30+ restaurants** scraped across Dining Out, Delivery, and Nightlife sections
@@ -16,31 +15,7 @@ This project delivers a comprehensive market intelligence study of food delivery
 - **Business insights** on cuisine saturation, pricing strategy, and operational efficiency
 - **SQL schema & queries** for structured analytics
 
-## Repository Structure
 
-```
-├── data/
-│   ├── zomato_all_sections.csv          # Raw restaurant dataset (30+ records)
-│   ├── zomato_menu_dataset.csv          # Menu dataset (200+ items, 5 restaurants)
-│   └── cleaned_restaurants.csv          # Final cleaned dataset
-│
-├── scripts/
-│   ├── zomato_restaurant_scraper.py     # Part 1: Restaurant data extraction
-│   ├── zomato_menu_scraper.py           # Part 3: Menu intelligence scraper
-│   └── data_cleaning.py                 # Part 4: Data cleaning pipeline
-│
-├── sql/
-│   └── market_intelligence_schema.sql   # Part 6: Database schema & queries
-│
-├── screenshots/
-│   ├── network_tab/                     # Part 2: API endpoint investigation
-│   └── json_responses/                  # API response captures
-│
-├── docs/
-│   └── methodology_report.pdf           # Part 7: Full methodology documentation
-│
-└── README.md                            # This file
-```
 
 ## Tech Stack
 
@@ -60,7 +35,6 @@ Collect structured data for **30+ restaurants** from Zomato's College Road listi
 ### Scraping Strategy
 The scraper uses **Selenium** for JavaScript-rendered content and **BeautifulSoup** for HTML parsing. Key design decisions:
 
-```python
 # Dynamic section navigation via XPath
 sections = ["Dining Out", "Delivery", "Nightlife"]
 for section in sections:
@@ -238,63 +212,156 @@ CREATE TABLE menu_items (
 ### Key Queries
 
 ```sql
--- 1. Top 5 Highest Rated Restaurants
-SELECT name, rating, num_reviews, cuisine
-FROM restaurants
-ORDER BY rating DESC, num_reviews DESC
-LIMIT 5;
+create database zom
 
--- 2. Average Cost-for-Two by Cuisine
-SELECT cuisine, ROUND(AVG(cost_for_two), 0) AS avg_cost
-FROM restaurants
-GROUP BY cuisine
-ORDER BY avg_cost DESC;
+use zom
 
--- 3. Restaurants with Multiple Cuisine Tags
-SELECT name, cuisine
-FROM restaurants
-WHERE cuisine LIKE '%,%';
+CREATE TABLE restaurants (
+    restaurant_id INT PRIMARY KEY,
+    name VARCHAR(255),
+    rating DECIMAL(2,1),
+    cost_for_two INT,
+    location VARCHAR(255),
+    votes INT
+);
 
--- 4. Highest Priced Menu Item (with restaurant)
-SELECT r.name, m.item_name, m.price
-FROM menu_items m
-JOIN restaurants r ON m.restaurant_id = r.restaurant_id
-ORDER BY m.price DESC
-LIMIT 1;
+CREATE TABLE cuisine_tags (
+    tag_id INT PRIMARY KEY,
+    restaurant_id INT,
+    cuisine VARCHAR(100),
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id)
+);
+
+CREATE TABLE menu_items (
+    item_id INT PRIMARY KEY,
+    restaurant_id INT,
+    item_name VARCHAR(255),
+    category VARCHAR(100),
+    price DECIMAL(8,2),
+    is_veg BOOLEAN,
+    FOREIGN KEY (restaurant_id) REFERENCES restaurants(restaurant_id)
+);
+
+
+INSERT INTO restaurants VALUES
+(1, 'Grill Craft Co.', 4.2, 800, 'Indiranagar, Bangalore', 320),
+(2, 'Larive Kitchen And Cocktail', 4.5, 1500, 'UB City, Bangalore', 512),
+(3, 'Tamara', 4.1, 1200, 'Koramangala, Bangalore', 198),
+(4, 'The Mykonos', 3.9, 1000, 'Whitefield, Bangalore', 145),
+(5, 'Tomatos', 3.7, 600, 'JP Nagar, Bangalore', 89),
+(6, 'Vintage Asia', 4.4, 2000, 'MG Road, Bangalore', 430);
+
+INSERT INTO cuisine_tags VALUES
+(1, 1, 'North Indian'),
+(2, 1, 'Continental'),
+(3, 2, 'European'),
+(4, 2, 'Asian'),
+(5, 2, 'Cocktails'),
+(6, 3, 'North Indian'),
+(7, 3, 'Biryani'),
+(8, 4, 'Mediterranean'),
+(9, 4, 'Continental'),
+(10, 5, 'South Indian'),
+(11, 6, 'Asian'),
+(12, 6, 'Chinese'),
+(13, 6, 'Thai');
+
+INSERT INTO menu_items VALUES
+(1, 1, 'Smoked Butter Chicken', 'Main Course', 440.00, false),
+(2, 1, 'Paneer Tikka', 'Starters', 320.00, true),
+(3, 1, 'Garlic Naan', 'Breads', 60.00, true),
+(4, 2, 'Truffle Risotto', 'Main Course', 950.00, true),
+(5, 2, 'Burrata Salad', 'Soups and Salads', 650.00, true),
+(6, 2, 'Sangria Pitcher', 'Drinks (Beverages)', 1200.00, true),
+(7, 3, 'Butter Chicken', 'Main Course', 380.00, false),
+(8, 3, 'Mutton Biryani', 'Rice and Biryani', 420.00, false),
+(9, 3, 'Dal Makhani', 'Indian', 280.00, true),
+(10, 4, 'Classic Margherita Pizza', 'Pizza and Pasta', 550.00, true),
+(11, 4, 'Penne Arrabbiata', 'Pizza and Pasta', 480.00, true),
+(12, 4, 'Greek Salad', 'Soups and Salads', 320.00, true),
+(13, 5, 'Masala Dosa', 'South Indian', 120.00, true),
+(14, 5, 'Idli Sambar', 'South Indian', 80.00, true),
+(15, 5, 'Filter Coffee', 'Drinks (Beverages)', 60.00, true),
+(16, 6, 'Thai Red Chicken Curry', 'Main Course', 580.00, false),
+(17, 6, 'Dim Sum Basket', 'Starters', 420.00, false),
+(18, 6, 'Wonton Soup', 'Soups and Salads', 280.00, false);
+
+
+
+-- QUERY 1: Top 5 highest rated restaurants 
+
+WITH ranked_restaurants AS (
+    SELECT
+        restaurant_id,
+        name,
+        rating,
+        votes,
+        DENSE_RANK() OVER (ORDER BY rating DESC, votes DESC) AS ran
+    FROM restaurants
+)
+SELECT restaurant_id, name, rating, votes
+FROM ranked_restaurants
+WHERE ran <= 5;
+
+
+-- QUERY 2: Average cost-for-two by cuisine (with restaurant count and grand total using ROLLUP)
+
+WITH cuisine_stats AS (
+    SELECT
+        ct.cuisine,
+        r.cost_for_two,
+        r.restaurant_id
+    FROM cuisine_tags ct
+    JOIN restaurants r ON r.restaurant_id = ct.restaurant_id
+)
+SELECT
+    COALESCE(cuisine, 'ALL CUISINES') AS cuisine,
+    ROUND(AVG(cost_for_two), 2)       AS avg_cost_for_two,
+    COUNT(restaurant_id)              AS restaurant_count
+FROM cuisine_stats
+GROUP BY cuisine WITH ROLLUP
+ORDER BY avg_cost_for_two DESC;
+
+
+-- QUERY 3: Restaurants with more than one cuisine (with cuisine list concatenated)
+WITH cuisine_counts AS (
+    SELECT
+        restaurant_id,
+        COUNT(tag_id)                                    AS cuisine_count,
+        GROUP_CONCAT(cuisine ORDER BY cuisine SEPARATOR ', ') AS cuisines
+    FROM cuisine_tags
+    GROUP BY restaurant_id
+    HAVING COUNT(tag_id) > 1
+)
+SELECT
+    r.restaurant_id,
+    r.name,
+    cc.cuisine_count,
+    cc.cuisines
+FROM cuisine_counts cc
+JOIN restaurants r ON r.restaurant_id = cc.restaurant_id
+ORDER BY cc.cuisine_count DESC;
+
+
+-- QUERY 4: Highest priced menu item (with rank per category using RANK)
+
+WITH price_ranked AS (
+    SELECT
+        mi.item_id,
+        mi.item_name,
+        mi.category,
+        mi.price,
+        r.name AS restaurant_name,
+        RANK() OVER (PARTITION BY mi.category ORDER BY mi.price DESC) AS price_rank
+    FROM menu_items mi
+    JOIN restaurants r ON r.restaurant_id = mi.restaurant_id
+)
+SELECT item_id, item_name, category, price, restaurant_name, price_rank
+FROM price_ranked
+WHERE price_rank = 1
+ORDER BY price DESC;
 ```
 
-## Getting Started
-
-### Prerequisites
-```bash
-pip install selenium pandas beautifulsoup4 webdriver-manager
-# Ensure ChromeDriver is in PATH or managed by webdriver-manager
-```
-
-### Run Restaurant Scraper
-```bash
-python scripts/zomato_restaurant_scraper.py
-# Output: zomato_all_sections.csv
-```
-
-### Run Menu Scraper
-```bash
-python scripts/zomato_menu_scraper.py
-# Output: zomato_menu_dataset.csv
-```
-
-### Data Cleaning
-```bash
-python scripts/data_cleaning.py
-# Output: cleaned_restaurants.csv
-```
-
-## Ethical Considerations
-
-- **Rate Limiting:** All scrapers include `time.sleep()` delays (3–10s) to avoid server strain
-- **Robots.txt:** Respected Zomato's crawl policies; no automated mass-downloading
-- **Data Usage:** Collected solely for educational/analytical purposes; no commercial redistribution
-- **Anti-Detection:** Minimal automation flags used only for data consistency, not circumvention
 
 ## Future Improvements
 
@@ -307,24 +374,5 @@ python scripts/data_cleaning.py
 | **ML** | Predict bestseller items using price-elasticity modeling |
 | **Visualization** | Tableau/PowerBI dashboard for stakeholder reporting |
 
-## Evidence Gallery
 
-| Screenshot | Description |
-|------------|-------------|
-| `network_tab_01.png` | Zomato `getPage` API request with payload |
-| `network_tab_02.png` | `search` endpoint with entity filters |
-| `network_tab_03.png` | `getMenu` JSON response structure |
-| `menu_output_01.png` | Grill Craft Co. extracted menu items |
-| `menu_output_02.png` | Larive Kitchen menu categories |
 
-## Author
-
-**Data Analyst** — 1–2 Years Experience  
-*Market Intelligence | Web Scraping | SQL | Business Strategy*
-
-## License
-
-This project is for **educational and assessment purposes only**. Data sourced from Zomato remains property of Zomato Pvt. Ltd.
-```
-
-Just copy-paste this entire block into your `README.md` file. Every section uses `##` headers as requested, with proper markdown tables, code blocks, and formatting throughout.
